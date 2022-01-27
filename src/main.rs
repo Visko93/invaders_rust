@@ -4,7 +4,7 @@ use crossterm::{
     terminal::{self, EnterAlternateScreen, LeaveAlternateScreen},
     ExecutableCommand,
 };
-use invaders::{frame::{self, new_frame}, render};
+use invaders::{frame::{self, new_frame, Drawable}, render, player::Player};
 use rusty_audio::Audio;
 use std::{io, sync::mpsc, thread};
 use std::{error::Error, time::Duration};
@@ -41,15 +41,19 @@ fn main() -> Result<(), Box<dyn Error>> {
         }
     });
 
+    //Create a player
+    let mut player = Player::new();
     
     //Game Loop
     'gameloop: loop {
         //Per-frame init
-        let curr_frame = new_frame();
+        let mut curr_frame = new_frame();
 
         while event::poll(Duration::default())? {
             if let Event::Key(key_event) = event::read()? {
                 match key_event.code {
+                    KeyCode::Left => player.move_left(),
+                    KeyCode::Right => player.move_right(),
                     KeyCode::Esc | KeyCode::Char('q') => {
                         audio.play("lose");
                         break 'gameloop;
@@ -60,6 +64,7 @@ fn main() -> Result<(), Box<dyn Error>> {
         }
 
         // Draw & render
+        player.draw(&mut curr_frame);
         let _ = render_tx.send(curr_frame);
         thread::sleep(Duration::from_millis(1));
 
